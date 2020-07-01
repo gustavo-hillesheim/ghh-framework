@@ -13,7 +13,7 @@
         function getStyle(): string {
             ob_start();
             $this->style();
-            return '<style>'.trim(ob_get_clean()).'</style>';
+            return "<style>\n".trim(ob_get_clean())."\n</style>";
         }
         
         function style(): void {}
@@ -21,7 +21,7 @@
         function getScript(): string {
             ob_start();
             $this->script();
-            return '<script>'.trim(ob_get_clean()).'</script>';
+            return "<script>\n".trim(ob_get_clean())."\n</script>";
         }
 
         function script(): void {}
