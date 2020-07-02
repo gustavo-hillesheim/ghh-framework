@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__ . '\..\components\web-component.php');
 require_once(__DIR__ . '\..\service\web-component-creator.php');
+require_once(__DIR__ . '\..\service\javascript-register.php');
 
 class WebComponentRegister
 {
@@ -9,12 +10,9 @@ class WebComponentRegister
     {
         $tagName = $component->getTagName();
         $className = get_class($component);
-        ?>
-<script>
-<?php echo WebComponentCreator::createClass($component) ?>
-
-customElements.define('<?php echo $tagName ?>', <?php echo $className ?>);
-</script>
-        <?php
+        $javascriptClass = WebComponentCreator::createClass($component);
+        $webComponentDefinition = "customElements.define('$tagName', $className)";
+        JavascriptRegister::addCode($javascriptClass);
+        JavascriptRegister::addCode($webComponentDefinition);
     }
 }

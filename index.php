@@ -1,8 +1,16 @@
 <?php
 require_once(__DIR__ . '\components\test-component.php');
-TestComponent::import();
+require_once(__DIR__ . '\service\javascript-register.php');
+TestandoComponent::import();
 ?>
 
-<body>
-    <test-component></test-component>
-</body>
+<html>
+    <head>
+        <script>
+            <?= JavascriptRegister::getCode() ?>
+        </script>
+    </head>
+    <body>
+        <testando-component textLegal="Testando"></testando-component>
+    </body>
+</html>
