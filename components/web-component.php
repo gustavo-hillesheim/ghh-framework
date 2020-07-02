@@ -33,7 +33,7 @@ abstract class WebComponent
 
     function getTagName(): string {
         $className = get_called_class();
-        return kebab_case($className);
+        return kebabCase($className);
     }
 
     static function import(): void {

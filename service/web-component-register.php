@@ -6,13 +6,18 @@ require_once(__DIR__ . '\..\service\javascript-register.php');
 class WebComponentRegister
 {
 
+    private static bool $createdAbstractWebComponent = false;
+
     static function register(WebComponent $component): void
     {
+        if (!WebComponentRegister::$createdAbstractWebComponent) {
+            $abstractWebComponentClass = WebComponentCreator::createAbstract();
+            JavascriptRegister::addCode($abstractWebComponentClass);
+            WebComponentRegister::$createdAbstractWebComponent = true;
+        }
         $tagName = $component->getTagName();
-        $className = get_class($component);
         $javascriptClass = WebComponentCreator::createClass($component);
-        $webComponentDefinition = "customElements.define('$tagName', $className)";
-        JavascriptRegister::addCode($javascriptClass);
+        $webComponentDefinition = "customElements.define('$tagName', $javascriptClass)";
         JavascriptRegister::addCode($webComponentDefinition);
     }
 }

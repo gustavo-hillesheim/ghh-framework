@@ -1,8 +1,7 @@
 <?php
 require_once(__DIR__ . '\..\components\web-component.php');
 
-class WebComponentCreator
-{
+class WebComponentCreator {
 
     static function createClass(WebComponent $component): string
     {
@@ -11,7 +10,7 @@ class WebComponentCreator
         ob_start();
 ?>
 <script>
-class <?= $className ?> extends HTMLElement {
+class <?= $className ?> extends AbstractWebComponent {
 
     _createLifecycleName = 'create';
     _beforeRenderLifecycleName = 'beforeRender';
@@ -21,33 +20,21 @@ class <?= $className ?> extends HTMLElement {
 <?php
 foreach ($fields as $value) {
     $name = $value->name;
+    $kebabCasedName = kebabCase($name);
     ?>
     get <?= $name ?>() {
-        return this.getAttribute('<?= $name ?>');
+        return this.getAttribute('<?= $kebabCasedName ?>');
     }
 
     set <?= $name ?>(value) {
-        this.setAttribute('<?= $name ?>', value);
+        this.setAttribute('<?= $kebabCasedName ?>', value);
     }
     <?php
 }
 ?>
 
-    constructor() {
+    cosntructor() {
         super();
-        this._onCreate();
-        this.attachShadow({ mode: 'open' });
-        this.render();
-    }
-
-    /** Rendering logic */
-    render() {
-        this._onBeforeRender();
-        this.shadowRoot.innerHTML = `
-            ${this._compileStyle()}
-            ${this._compileTemplate()}
-        `;
-        this._onAfterRender();
     }
 
     _compileStyle() {
@@ -62,6 +49,51 @@ foreach ($fields as $value) {
             }
         ?>
         return `<?= $component->getTemplate() ?>`;
+    }
+
+    static get observedAttributes() {
+        return [<?php
+            foreach ($fields as $value) {
+                $kebabCasedName = kebabCase($value->name);
+                echo "'$kebabCasedName',";
+            }
+        ?>];
+    }
+
+    /** Custom functionalities */
+    <?= $component->getScript() ?>
+}
+</script>
+<?php
+        $javascriptClass = trim(ob_get_clean());
+        return removeSurroundingTag($javascriptClass, 'script');
+    }
+
+    static function getFields(WebComponent $component) {
+        $reflect = new ReflectionClass($component);
+        return $reflect->getProperties();
+    }
+
+    static function createAbstract() {
+        ob_start();
+?>
+<script>
+class AbstractWebComponent extends HTMLElement {
+
+    constructor() {
+        super();
+        this._onCreate();
+        this.attachShadow({ mode: 'open' });
+    }
+
+    /** Rendering logic */
+    render() {
+        this._onBeforeRender();
+        this.shadowRoot.innerHTML = `
+            ${this._compileStyle()}
+            ${this._compileTemplate()}
+        `;
+        this._onAfterRender();
     }
 
     /** Lifecycle hooks */
@@ -89,7 +121,6 @@ foreach ($fields as $value) {
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-        console.log(name, oldValue, newValue);
         let shouldRender = true;
         if (this.renderOnChanged) {
             shouldRender = this.renderOnChanged(name, oldValue, newValue);
@@ -98,18 +129,9 @@ foreach ($fields as $value) {
             this.render();
         }
     }
-
-    /** Custom functionalities */
-    <?= $component->getScript() ?>
 }
 </script>
 <?php
-        $javascriptClass = trim(ob_get_clean());
-        return removeSurroundingTag($javascriptClass, 'script');
-    }
-
-    static function getFields(WebComponent $component) {
-        $reflect = new ReflectionClass($component);
-        return $reflect->getProperties();
+        return removeSurroundingTag(trim(ob_get_clean()), 'script');
     }
 }

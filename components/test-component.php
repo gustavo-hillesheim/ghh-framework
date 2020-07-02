@@ -8,6 +8,7 @@ class TestandoComponent extends WebComponent {
     function template(): void {
     ?>
         <h1>${textLegal}</h1>
+        <h2>Outro texto</h2>
     <?php
     }
 

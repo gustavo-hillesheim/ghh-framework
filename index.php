@@ -11,6 +11,6 @@ TestandoComponent::import();
         </script>
     </head>
     <body>
-        <testando-component textLegal="Testando"></testando-component>
+        <testando-component text-legal="Testando"></testando-component>
     </body>
 </html>

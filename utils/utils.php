@@ -37,7 +37,7 @@ function removeSurroundingTag(string $text, string $tagName): string
     return $text;
 }
 
-function kebab_case(string $text): string
+function kebabCase(string $text): string
 {
     return strtolower(preg_replace(
         ["/([A-Z]+)/", "/_([A-Z]+)([A-Z][a-z])/"],
