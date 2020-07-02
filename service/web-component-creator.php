@@ -12,14 +12,10 @@ class WebComponentCreator {
 <script>
 class <?= $className ?> extends AbstractWebComponent {
 
-    _createLifecycleName = 'create';
-    _beforeRenderLifecycleName = 'beforeRender';
-    _afterRenderLifecycleName = 'afterRender';
-
     /** Getters and Setters */
 <?php
-foreach ($fields as $value) {
-    $name = $value->name;
+foreach ($fields as $field) {
+    $name = $field->name;
     $kebabCasedName = kebabCase($name);
     ?>
     get <?= $name ?>() {
@@ -27,34 +23,58 @@ foreach ($fields as $value) {
     }
 
     set <?= $name ?>(value) {
+    <?php 
+        if (gettype($component->$name) === 'boolean') {
+    ?>
+        if (value) {
+            this.setAttribute('<?= $kebabCasedName ?>', value);
+        } else {
+            this.removeAttribute('<?= $kebabCasedName ?>');
+        }
+    <?php
+        } else {
+    ?>
         this.setAttribute('<?= $kebabCasedName ?>', value);
+    <?php
+        }
+    ?>
     }
     <?php
 }
 ?>
 
-    cosntructor() {
+    constructor() {
         super();
     }
 
+    _setDefaultValues() {    
+<?php
+foreach ($fields as $field) {
+    $name = $field->name;
+    if (isset($component->$name)) {
+        $value = phpToJavascriptType($component->$name);
+        ?>
+        this.<?= $name ?> = <?= $value ?>;
+        <?php
+    }
+}
+?>
+    }
+
     _compileStyle() {
+        <?php WebComponentCreator::templateAttributes($fields) ?>
         return `<?= $component->getStyle() ?>`;
     }
 
     _compileTemplate() {
-        <?php
-            foreach ($fields as $value) {
-                $name = $value->name;
-                echo "const $name = this.$name;\n";
-            }
-        ?>
+        <?php WebComponentCreator::templateAttributes($fields) ?>
         return `<?= $component->getTemplate() ?>`;
     }
 
     static get observedAttributes() {
         return [<?php
-            foreach ($fields as $value) {
-                $kebabCasedName = kebabCase($value->name);
+            foreach ($fields as $field) {
+                $kebabCasedName = kebabCase($field->name);
                 echo "'$kebabCasedName',";
             }
         ?>];
@@ -74,11 +94,23 @@ foreach ($fields as $value) {
         return $reflect->getProperties();
     }
 
+    private static function templateAttributes(array $fields): void {
+        foreach ($fields as $field) {
+                $name = $field->name;
+                echo "const $name = this.$name;\n";
+            }
+    }
+
     static function createAbstract() {
         ob_start();
 ?>
 <script>
 class AbstractWebComponent extends HTMLElement {
+
+    /** Lifecycle hooks names */
+    _createLifecycleName = 'create';
+    _beforeRenderLifecycleName = 'beforeRender';
+    _afterRenderLifecycleName = 'afterRender';
 
     constructor() {
         super();
@@ -118,6 +150,7 @@ class AbstractWebComponent extends HTMLElement {
     /** Web component hooks */
     connectedCallback() {
         this.render();
+        this._setDefaultValues();
     }
 
     attributeChangedCallback(name, oldValue, newValue) {

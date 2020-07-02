@@ -1,12 +1,10 @@
 <?php
-function startsWith(string $comparedString, string $startingString): bool
-{
+function startsWith(string $comparedString, string $startingString): bool {
     $len = strlen($startingString);
     return (substr($comparedString, 0, $len) === $startingString);
 }
 
-function endsWith(string $comparedString, string $endingString): bool
-{
+function endsWith(string $comparedString, string $endingString): bool {
     $len = strlen($endingString);
     if ($len == 0) {
         return true;
@@ -15,8 +13,7 @@ function endsWith(string $comparedString, string $endingString): bool
 }
 
 
-function addSurroundingTag(string $text, string $tagName): string
-{
+function addSurroundingTag(string $text, string $tagName): string {
     if (!startsWith($text, "<$tagName>")) {
         $text = "<$tagName>\n" . $text;
     }
@@ -26,8 +23,7 @@ function addSurroundingTag(string $text, string $tagName): string
     return $text;
 }
 
-function removeSurroundingTag(string $text, string $tagName): string
-{
+function removeSurroundingTag(string $text, string $tagName): string {
     if (startsWith($text, "<$tagName>")) {
         $text = substr($text, strlen("<$tagName>"));
     }
@@ -37,11 +33,24 @@ function removeSurroundingTag(string $text, string $tagName): string
     return $text;
 }
 
-function kebabCase(string $text): string
-{
+function kebabCase(string $text): string {
     return strtolower(preg_replace(
         ["/([A-Z]+)/", "/_([A-Z]+)([A-Z][a-z])/"],
         ["-$1", "-$1-$2"],
         lcfirst($text)
     ));
+}
+
+function phpToJavascriptType($value) {
+    if (gettype($value) === 'string') {
+        $value = "'$value'";
+    }
+    if (gettype($value) === 'boolean') {
+        if ($value) {
+            $value = 'true';
+        } else {
+            $value = 'false';
+        }
+    }
+    return $value;
 }
