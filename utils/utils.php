@@ -41,7 +41,7 @@ function kebabCase(string $text): string {
     ));
 }
 
-function phpToJavascriptType($value) {
+function convertToJavascriptValue($value) {
     if (gettype($value) === 'string') {
         $value = "'$value'";
     }
@@ -53,4 +53,24 @@ function phpToJavascriptType($value) {
         }
     }
     return $value;
+}
+
+class TagMode {
+    const NONE = 0;
+    const REMOVE_SURROUNDING = 1;
+    const ADD_SURROUNDING = 2;
+}
+
+function readOutput($fn, int $tagMode = TagMode::NONE, string $tag = ''): string {
+    ob_start();
+    $fn();
+    $content = trim(ob_get_clean());
+
+    if ($tagMode == TagMode::REMOVE_SURROUNDING) {
+        $content = removeSurroundingTag($content, $tag);
+
+    } else if ($tagMode == TagMode::ADD_SURROUNDING) {
+        $content = addSurroundingTag($content, $tag);
+    }
+    return $content;
 }

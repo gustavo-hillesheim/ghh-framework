@@ -3,8 +3,7 @@ require_once(__DIR__ . '\..\components\web-component.php');
 
 class WebComponentCreator {
 
-    static function createClass(WebComponent $component): string
-    {
+    static function createClass(WebComponent $component): string {
         $className = get_class($component);
         $fields = WebComponentCreator::getFields($component);
         ob_start();
@@ -52,7 +51,7 @@ foreach ($fields as $field) {
 foreach ($fields as $field) {
     $name = $field->name;
     if (isset($component->$name)) {
-        $value = phpToJavascriptType($component->$name);
+        $value = convertToJavascriptValue($component->$name);
         ?>
         this.<?= $name ?> = <?= $value ?>;
         <?php

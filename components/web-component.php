@@ -6,27 +6,19 @@ abstract class WebComponent
 {
 
     function getTemplate(): string {
-        ob_start();
-        $this->template();
-        return trim(ob_get_clean());
+        return readOutput(fn() => $this->template());
     }
 
     abstract function template(): void;
 
     function getStyle(): string {
-        ob_start();
-        $this->style();
-        $style = trim(ob_get_clean());
-        return addSurroundingTag($style, 'style');
+        return readOutput(fn() => $this->style(), TagMode::ADD_SURROUNDING, 'style');
     }
 
     function style(): void {}
 
     function getScript(): string {
-        ob_start();
-        $this->script();
-        $script = trim(ob_get_clean());
-        return removeSurroundingTag($script, 'script');
+        return readOutput(fn() => $this->script(), TagMode::REMOVE_SURROUNDING, 'script');
     }
 
     function script(): void {}
