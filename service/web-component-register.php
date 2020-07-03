@@ -11,10 +11,12 @@ class WebComponentRegister
     static function register(WebComponent $component): void
     {
         if (!WebComponentRegister::$createdAbstractWebComponent) {
+
             $abstractWebComponentClass = WebComponentCreator::createAbstract();
             JavascriptRegister::addCode($abstractWebComponentClass);
             WebComponentRegister::$createdAbstractWebComponent = true;
         }
+        
         $tagName = $component->getTagName();
         $javascriptClass = WebComponentCreator::createClass($component);
         $webComponentDefinition = "customElements.define('$tagName', $javascriptClass)";

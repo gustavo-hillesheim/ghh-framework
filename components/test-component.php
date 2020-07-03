@@ -5,7 +5,7 @@ class TestandoComponent extends WebComponent {
 
     public $textLegal = 'teste legal';
     public $rotation = -45;
-    public $hasValue = false;
+    public $hasValue = true;
 
     function template(): void {
     ?>

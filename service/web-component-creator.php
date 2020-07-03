@@ -6,86 +6,85 @@ class WebComponentCreator {
     static function createClass(WebComponent $component): string {
         $className = get_class($component);
         $fields = WebComponentCreator::getFields($component);
-        ob_start();
-?>
-<script>
-class <?= $className ?> extends AbstractWebComponent {
 
-    /** Getters and Setters */
-<?php
-foreach ($fields as $field) {
-    $name = $field->name;
-    $kebabCasedName = kebabCase($name);
-    ?>
-    get <?= $name ?>() {
-        return this.getAttribute('<?= $kebabCasedName ?>');
-    }
+        return readOutput(function() use ($component, $className, $fields) { ?>
+            <script>
+            class <?= $className ?> extends AbstractWebComponent {
+            
+                constructor() {
+                    super();
+                }
 
-    set <?= $name ?>(value) {
-    <?php 
-        if (gettype($component->$name) === 'boolean') {
-    ?>
-        if (value) {
-            this.setAttribute('<?= $kebabCasedName ?>', value);
-        } else {
-            this.removeAttribute('<?= $kebabCasedName ?>');
-        }
-    <?php
-        } else {
-    ?>
-        this.setAttribute('<?= $kebabCasedName ?>', value);
-    <?php
-        }
-    ?>
-    }
-    <?php
-}
-?>
+                <?php WebComponentCreator::defaultValues($component, $fields) ?>
 
-    constructor() {
-        super();
-    }
+                /** Properties / attributes accessors */
+                <?php WebComponentCreator::defineProperties($component, $fields) ?>
 
-    _setDefaultValues() {    
-<?php
-foreach ($fields as $field) {
-    $name = $field->name;
-    if (isset($component->$name)) {
-        $value = convertToJavascriptValue($component->$name);
-        ?>
-        this.<?= $name ?> = <?= $value ?>;
-        <?php
-    }
-}
-?>
-    }
+                /** Rendering */
+                _compileStyle() {
+                    <?php WebComponentCreator::templateAttributes($fields) ?>
+                    return `<?= $component->getStyle() ?>`;
+                }
+                _compileTemplate() {
+                    <?php WebComponentCreator::templateAttributes($fields) ?>
+                    return `<?= $component->getTemplate() ?>`;
+                }
 
-    _compileStyle() {
-        <?php WebComponentCreator::templateAttributes($fields) ?>
-        return `<?= $component->getStyle() ?>`;
-    }
+                <?php WebComponentCreator::observedAttributes($fields) ?>
 
-    _compileTemplate() {
-        <?php WebComponentCreator::templateAttributes($fields) ?>
-        return `<?= $component->getTemplate() ?>`;
-    }
-
-    static get observedAttributes() {
-        return [<?php
-            foreach ($fields as $field) {
-                $kebabCasedName = kebabCase($field->name);
-                echo "'$kebabCasedName',";
+                /** Custom functionalities */
+                <?= $component->getScript() ?>
             }
-        ?>];
+            </script>
+            <?php }, TagMode::REMOVE_SURROUNDING, 'script');
     }
 
-    /** Custom functionalities */
-    <?= $component->getScript() ?>
-}
-</script>
-<?php
-        $javascriptClass = trim(ob_get_clean());
-        return removeSurroundingTag($javascriptClass, 'script');
+    private static function defineProperties(WebComponent $component, array $fields): void {
+        foreach ($fields as $field) {
+            $name = $field->name;
+            $kebabCasedName = kebabCase($name);
+            echo "\tget $name() {\n";
+            echo "\t\treturn this.getAttribute('$kebabCasedName');\n";
+            echo "\t}\n";
+        
+            echo "\tset $name(value) {\n";
+            if (gettype($component->$name) === 'boolean') {
+
+                echo "\t\tif (value) {\n";
+                echo "\t\t\tthis.setAttribute('$kebabCasedName', value);\n";
+                echo "\t\t} else {\n";
+                echo "\t\t\tthis.removeAttribute('$kebabCasedName>');\n";
+                echo "\t\t}\n";
+
+            } else {
+                echo "\t\tthis.setAttribute('$kebabCasedName', value);\n";
+            }
+            echo "\t}\n";
+        }
+    }
+
+    private static function observedAttributes(array $fields): void {
+        echo "\tstatic get observedAttributes() {\n";
+        echo "\t\treturn [";
+        foreach ($fields as $field) {
+            $kebabCasedName = kebabCase($field->name);
+            echo "'$kebabCasedName',";
+        }
+        echo "];\n";
+        echo "\t}\n";
+    }
+
+    private static function defaultValues(WebComponent $component, array $fields): void {
+        echo "\t_setDefaultValues() {\n";
+        foreach ($fields as $field) {
+            $name = $field->name;
+
+            if (isset($component->$name)) {
+                $value = convertToJavascriptValue($component->$name);
+                echo "\t\tthis.$name = $value;\n";
+            }
+        } 
+        echo "\t}\n";
     }
 
     static function getFields(WebComponent $component) {
@@ -101,69 +100,6 @@ foreach ($fields as $field) {
     }
 
     static function createAbstract() {
-        ob_start();
-?>
-<script>
-class AbstractWebComponent extends HTMLElement {
-
-    /** Lifecycle hooks names */
-    _createLifecycleName = 'create';
-    _beforeRenderLifecycleName = 'beforeRender';
-    _afterRenderLifecycleName = 'afterRender';
-
-    constructor() {
-        super();
-        this._onCreate();
-        this.attachShadow({ mode: 'open' });
-    }
-
-    /** Rendering logic */
-    render() {
-        this._onBeforeRender();
-        this.shadowRoot.innerHTML = `
-            ${this._compileStyle()}
-            ${this._compileTemplate()}
-        `;
-        this._onAfterRender();
-    }
-
-    /** Lifecycle hooks */
-    _onCreate() {
-        this._runLifecycle(this._createLifecycleName);
-    }
-
-    _onBeforeRender() {
-        this._runLifecycle(this._beforeRenderLifecycleName);
-    }
-
-    _onAfterRender() {
-        this._runLifecycle(this._afterRenderLifecycleName);
-    }
-
-    _runLifecycle(lifecycle) {
-        if (this[lifecycle]) {
-            this[lifecycle]();
-        }
-    }
-
-    /** Web component hooks */
-    connectedCallback() {
-        this.render();
-        this._setDefaultValues();
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-        let shouldRender = true;
-        if (this.renderOnChanged) {
-            shouldRender = this.renderOnChanged(name, oldValue, newValue);
-        }
-        if (shouldRender) {
-            this.render();
-        }
-    }
-}
-</script>
-<?php
-        return removeSurroundingTag(trim(ob_get_clean()), 'script');
+        return file_get_contents(__DIR__ . '\..\service\abstract-web-component.js');
     }
 }
