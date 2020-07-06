@@ -10,7 +10,9 @@ class DomMode {
 abstract class WebComponent
 {
 
-    public $_domMode = DomMode::SHADOW;
+    function __construct(string $domMode = DomMode::SHADOW) {
+        $this->_domMode = $domMode;
+    }
 
     function getTemplate(): string {
         return readOutput(fn() => $this->template());

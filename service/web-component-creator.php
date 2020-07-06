@@ -1,5 +1,7 @@
 <?php
 require_once(__DIR__ . '\..\components\web-component.php');
+require_once(__DIR__ . '\..\service\style-register.php');
+require_once(__DIR__ . '\..\utils\utils.php');
 
 class WebComponentCreator {
 
@@ -53,10 +55,15 @@ class WebComponentCreator {
 
     private static function renderStyles(WebComponent $component, array $fields): void {
         $styles = $component->getStyle();
-        echo "\t_compileStyle() {\n";
-        echo WebComponentCreator::templateAttributes($fields);
-        echo "\t\treturn `$styles`;\n";
-        echo "\t}\n";
+        if ($component->_domMode == DomMode::SHADOW) {
+            echo "\t_compileStyle() {\n";
+            echo WebComponentCreator::templateAttributes($fields);
+            echo "\t\treturn `$styles`;\n";
+            echo "\t}\n";
+        } else {
+            echo "\t_compileStyle() { return ''; }";
+            StyleRegister::addStyle($styles, $component->getTagName());
+        }
     }
 
     private static function renderTemplate(WebComponent $component, array $fields): void {
