@@ -9,7 +9,7 @@ class TestandoComponent extends WebComponent {
 
     function template(): void {
     ?>
-        <h1>${textLegal}</h1>
+        <h1>${textLegal} ${rotation}</h1>
         <h2>Outro texto</h2>
         ${hasValue ? '<h3>Eu tenho valor</h3>' : ''}
     <?php

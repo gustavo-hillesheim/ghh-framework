@@ -2,8 +2,15 @@
 require_once(__DIR__ . '\..\utils\utils.php');
 require_once(__DIR__ . '\..\service\web-component-register.php');
 
+class DomMode {
+    const SHADOW = 'shadow';
+    const NORMAL = 'normal';
+}
+
 abstract class WebComponent
 {
+
+    public $_domMode = DomMode::SHADOW;
 
     function getTemplate(): string {
         return readOutput(fn() => $this->template());

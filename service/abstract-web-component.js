@@ -1,16 +1,21 @@
 class AbstractWebComponent extends HTMLElement {
 
     /** Lifecycle hooks names */
-    _createLifecycleName = 'create';
+    _createLifecycleName = 'onCreate';
     _beforeRenderLifecycleName = 'beforeRender';
     _afterRenderLifecycleName = 'afterRender';
 
     _root;
 
-    constructor() {
+    constructor(domMode) {
         super();
+        this._domMode = domMode;
         this._onCreate();
-        if (this.useShadow) {
+        this._createRoot();
+    }
+
+    _createRoot() {
+        if (this._domMode === 'shadow') {
             this._root = this.attachShadow({ mode: 'open' });
         } else {
             this._root = this;
