@@ -1,3 +1,6 @@
+const objRefs = {};
+const fnRefs = {};
+
 class AbstractWebComponent extends HTMLElement {
 
     /** Lifecycle hooks names */

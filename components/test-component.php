@@ -28,12 +28,4 @@ class TestandoComponent extends WebComponent {
         </style>
     <?php
     }
-
-    function script(): void {
-        ?>
-            onCreated() {
-                console.log(this.c);
-            }
-        <?php
-    }
 }

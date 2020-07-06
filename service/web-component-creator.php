@@ -52,29 +52,42 @@ class WebComponentCreator {
     }
 
     private static function renderTemplateAndStyles(WebComponent $component, array $fields): void {
-        WebComponentCreator::renderStyles($component, $fields);
-        WebComponentCreator::renderTemplate($component, $fields);
+        WebComponentCreator::stringCompiler($fields);
+        WebComponentCreator::renderStyles($component);
+        WebComponentCreator::renderTemplate($component);
     }
 
-    private static function renderStyles(WebComponent $component, array $fields): void {
+    private static function stringCompiler(array $fields): void {
+        echo "_compile(template) {";
+        echo WebComponentCreator::templateAttributes($fields);
+        ?>
+            var keys = Object.keys(templateAttributes),
+            fn = new Function(...keys, 'return `' + template.replace(/`/g, '\\`') + '`');
+            return fn(...keys.map(key => templateAttributes[key]));
+        <?php
+        echo "}";
+    }
+
+    private static function renderStyles(WebComponent $component): void {
         $styles = $component->getStyle();
+        $styles = preg_replace('/\$/', '\\\\$', $styles);
+
         if ($component->_domMode == DomMode::SHADOW) {
-            echo "\t_compileStyle() {\n";
-            echo WebComponentCreator::templateAttributes($fields);
-            echo "\t\treturn `$styles`;\n";
-            echo "\t}\n";
+            echo "_compileStyle() {";
+            echo "  return this._compile(`$styles`);";
+            echo "}";
         } else {
-            echo "\t_compileStyle() { return ''; }";
+            echo "_compileStyle() { return ''; }";
             StyleRegister::addStyle($styles, $component->getTagName());
         }
     }
 
-    private static function renderTemplate(WebComponent $component, array $fields): void {
+    private static function renderTemplate(WebComponent $component): void {
         $template = $component->getTemplate();
-        echo "\t_compileTemplate() {\n";
-        echo WebComponentCreator::templateAttributes($fields);
-        echo "\t\treturn `$template`;\n";
-        echo "\t}\n";
+        $template = preg_replace('/\$/', '\\\\$', $template);
+        echo "_compileTemplate() {";
+        echo "  return this._compile(`$template`);";
+        echo "}";
     }
 
     private static function defineProperties(WebComponent $component, array $fields): void {
@@ -118,16 +131,16 @@ class WebComponentCreator {
         } else {
             $value = convertToJavascriptValue($value);
         }
-        echo "\t$fieldName = $value;";
+        echo "$fieldName = $value;";
     }
 
     private static function createAttributeGetter(string $fieldName, string $kebabCasedName, string $type): void {
         
         $typeConversionFunction = WebComponentCreator::getTypeConverter($type);
-        echo "\tget $fieldName() {\n";
-        echo "\t\treturn ";
+        echo "get $fieldName() {";
+        echo "  return ";
         if (WebComponentCreator::isObject($type)) {
-            echo "JSON.parse(atob(this.getAttribute('$kebabCasedName')));\n";
+            echo "JSON.parse(atob(this.getAttribute('$kebabCasedName')));";
 
         } else {
             if (isset($typeConversionFunction)) {
@@ -137,9 +150,9 @@ class WebComponentCreator {
             if (isset($typeConversionFunction)) {
                 echo ")";
             }
-            echo ";\n";
+            echo ";";
         }
-        echo "\t}\n";
+        echo "}";
     }
 
     private static function getTypeConverter(string $type) {
@@ -150,23 +163,23 @@ class WebComponentCreator {
     }
 
     private static function createAttributeSetter(string $fieldName, string $kebabCasedName, string $type): void {
-        echo "\tset $fieldName(value) {\n";
+        echo "set $fieldName(value) {";
         if ($type === 'boolean') {
 
-            echo "\t\tif (value) {\n";
-            echo "\t\t\tthis.setAttribute('$kebabCasedName', value);\n";
-            echo "\t\t} else {\n";
-            echo "\t\t\tthis.removeAttribute('$kebabCasedName');\n";
-            echo "\t\t}\n";
+            echo "if (value) {";
+            echo "  this.setAttribute('$kebabCasedName', value);";
+            echo "} else {";
+            echo "  this.removeAttribute('$kebabCasedName');";
+            echo "}";
 
         } else {
             if (WebComponentCreator::isObject($type)) {
-                echo "\t\tthis.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)));\n";
+                echo "this.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)));";
             } else {
-                echo "\t\tthis.setAttribute('$kebabCasedName', value);\n";
+                echo "this.setAttribute('$kebabCasedName', value);";
             }
         }
-        echo "\t}\n";
+        echo "}";
     }
 
     private static function isObject(string $type): bool {
@@ -174,28 +187,27 @@ class WebComponentCreator {
     }
 
     private static function observedAttributes(array $fields): void {
-        echo "\tstatic get observedAttributes() {\n";
-        echo "\t\treturn [";
+        echo "static get observedAttributes() {";
+        echo "  return [";
         foreach ($fields as $field) {
             $kebabCasedName = kebabCase($field->name);
             echo "'$kebabCasedName',";
         }
-        echo "];\n";
-        echo "\t}\n";
+        echo "]; }";
     }
 
     private static function defaultValues(WebComponent $component, array $fields): void {
-        echo "\t_setDefaultValues() {\n";
+        echo "_setDefaultValues() {";
         foreach ($fields as $field) {
             $name = $field->name;
             
             if (!startsWith($name, '_') && isset($component->$name)) {
                 $value = convertToJavascriptValue($component->$name);
                 $encodedValue = json_encode($value);
-                echo "\t\tthis.$name = $encodedValue;\n";
+                echo "  this.$name = $encodedValue;";
             }
         } 
-        echo "\t}\n";
+        echo "}";
     }
 
     static function getFields(WebComponent $component) {
@@ -204,13 +216,11 @@ class WebComponentCreator {
     }
 
     private static function templateAttributes(array $fields): void {
+        echo "const templateAttributes = { ";
         foreach ($fields as $field) {
-                $name = $field->name;
-                echo "const $name = this.$name;\n";
-            }
-    }
-
-    static function createAbstract() {
-        return file_get_contents(__DIR__ . '\..\service\abstract-web-component.js');
+            $name = $field->name;
+            echo "'$name': this.$name, ";
+        }
+        echo "};";
     }
 }
