@@ -19,7 +19,7 @@ class WebComponentRegister
         
         $tagName = $component->getTagName();
         $javascriptClass = WebComponentCreator::createClass($component);
-        $webComponentDefinition = "customElements.define('$tagName', $javascriptClass)";
+        $webComponentDefinition = "customElements.define('$tagName', $javascriptClass);";
         JavascriptRegister::addCode($webComponentDefinition);
     }
 }

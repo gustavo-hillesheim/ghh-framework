@@ -6,10 +6,14 @@ class TestandoComponent extends WebComponent {
     public $textLegal = 'teste legal';
     public $rotation = -45;
     public $hasValue = true;
+    public $c = [
+        "name" => "Gustavo",
+        "hobby" => "programming"
+    ];
 
     function template(): void {
     ?>
-        <h1>${textLegal} ${rotation}</h1>
+        <h1>${c && c.name} ${c && c.hobby}</h1>
         <h2>Outro texto</h2>
         ${hasValue ? '<h3>Eu tenho valor</h3>' : ''}
     <?php
@@ -23,5 +27,13 @@ class TestandoComponent extends WebComponent {
             }
         </style>
     <?php
+    }
+
+    function script(): void {
+        ?>
+            onCreated() {
+                console.log(this.c);
+            }
+        <?php
     }
 }

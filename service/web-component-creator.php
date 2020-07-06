@@ -13,7 +13,10 @@ class WebComponentCreator {
         'double' => 'parseDouble',
         'number' => 'Number',
         'string' => 'String',
-        'null' => null
+        'array' => 'JSON.parse',
+        'Object' => 'JSON.parse',
+        'null' => null,
+        null => null
     ];
 
     static function createClass(WebComponent $component): string {
@@ -103,7 +106,7 @@ class WebComponentCreator {
         } else {
             $fieldType = $field->getType();
             if (isset($fieldType)) {
-                return $fieldType;
+                return $fieldType->getName();
             }
             return 'null';
         }
@@ -119,18 +122,31 @@ class WebComponentCreator {
     }
 
     private static function createAttributeGetter(string $fieldName, string $kebabCasedName, string $type): void {
-        $typeConversionFunction = WebComponentCreator::$typeConversionFunctions[$type];
+        
+        $typeConversionFunction = WebComponentCreator::getTypeConverter($type);
         echo "\tget $fieldName() {\n";
         echo "\t\treturn ";
-        if (isset($typeConversionFunction)) {
-            echo "$typeConversionFunction(";
+        if (WebComponentCreator::isObject($type)) {
+            echo "JSON.parse(atob(this.getAttribute('$kebabCasedName')));\n";
+
+        } else {
+            if (isset($typeConversionFunction)) {
+                echo "$typeConversionFunction(";
+            }
+            echo "this.getAttribute('$kebabCasedName')";
+            if (isset($typeConversionFunction)) {
+                echo ")";
+            }
+            echo ";\n";
         }
-        echo "this.getAttribute('$kebabCasedName')";
-        if (isset($typeConversionFunction)) {
-            echo ")";
-        }
-        echo ";\n";
         echo "\t}\n";
+    }
+
+    private static function getTypeConverter(string $type) {
+        if (array_key_exists($type, WebComponentCreator::$typeConversionFunctions)) {
+            return WebComponentCreator::$typeConversionFunctions[$type];
+        }
+        return 'JSON.parse';
     }
 
     private static function createAttributeSetter(string $fieldName, string $kebabCasedName, string $type): void {
@@ -144,9 +160,17 @@ class WebComponentCreator {
             echo "\t\t}\n";
 
         } else {
-            echo "\t\tthis.setAttribute('$kebabCasedName', value);\n";
+            if (WebComponentCreator::isObject($type)) {
+                echo "\t\tthis.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)));\n";
+            } else {
+                echo "\t\tthis.setAttribute('$kebabCasedName', value);\n";
+            }
         }
         echo "\t}\n";
+    }
+
+    private static function isObject(string $type): bool {
+        return !array_key_exists($type, WebComponentCreator::$typeConversionFunctions) || $type == 'array' || $type == 'object';
     }
 
     private static function observedAttributes(array $fields): void {
@@ -164,10 +188,11 @@ class WebComponentCreator {
         echo "\t_setDefaultValues() {\n";
         foreach ($fields as $field) {
             $name = $field->name;
-
+            
             if (!startsWith($name, '_') && isset($component->$name)) {
                 $value = convertToJavascriptValue($component->$name);
-                echo "\t\tthis.$name = $value;\n";
+                $encodedValue = json_encode($value);
+                echo "\t\tthis.$name = $encodedValue;\n";
             }
         } 
         echo "\t}\n";
