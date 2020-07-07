@@ -1,58 +1,152 @@
 <?php
 
-class MethodBuilder {
+class JavascriptMethod {
 
-    private string $output = "";
-    private int $tabQuantity = 1;
+    private string $name;
+    private array $params;
+    private string $body;
 
-    public function line(string $line): MethodBuilder {
-        $this->newLine();
-        $this->addTabs();
-        $this->output .= $line . ";";
+    function __construct(string $name, array $params, string $body) {
+        $this->name = $name;
+        $this->params = $params;
+        $this->body = $body;
+    }
+
+    function __toString() {
+        $paramsStr = "";
+        foreach ($this->params as $param) {
+            if ($paramsStr != "") {
+                $paramsStr .= ', ';
+            }
+            $paramsStr .= $param;
+        }
+
+        return "$this->name($paramsStr) {\n"
+            . "$this->body"
+            . "}\n";
+    }
+}
+
+class JavascriptMethodBuilder {
+
+    private string $name = "";
+    private array $params = [];
+    private string $body = "";
+    private int $tabQuantity = 2;
+
+    function __construct(string $name) {
+        $this->name = $name;
+    }
+
+    public function param(string $param): JavascriptMethodBuilder {
+        array_push($this->params, $param);
         return $this;
     }
 
-    public function lines(array $lines): MethodBuilder {
+    public function params(array $params): JavascriptMethodBuilder {
+        foreach ($params as $param) {
+            $this->param($param);
+        }
+        return $this;
+    }
+
+    public function var(string $name, string $value, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
+        if ($addTabs) {
+            $this->addTabs();
+        }
+        $this->body .= "var $name = $value";
+        return $this->endAndNewLine($newLine, $endLine);
+    }
+
+    public function const(string $name, string $value, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
+        if ($addTabs) {
+            $this->addTabs();
+        }
+        $this->body .= "const $name = $value";
+        return $this->endAndNewLine($newLine, $endLine);
+    }
+
+    public function code(string $code): JavascriptMethodBuilder {
+        $this->line($code, false, false, false);
+        return $this;
+    }
+
+    public function line(string $line, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
+        if ($addTabs) {
+            $this->addTabs();
+        }
+        $this->body .= $line;
+        return $this->endAndNewLine($newLine, $endLine);
+    }
+
+    public function lines(array $lines): JavascriptMethodBuilder {
         foreach ($lines as $line) {
             $this->line($line);
         }
         return $this;
     }
 
-    public function if(string $condition): MethodBuilder {
-        $this->newLine();
+    public function if(string $condition): JavascriptMethodBuilder {
         $this->addTabs();
-        $this->output .= "if ($condition) {";
+        $this->body .= "if ($condition) {";
         $this->tabQuantity++;
+        $this->newLine();
         return $this;
     }
 
-    public function else(string $condition = NULL): MethodBuilder {
-        $this->newLine();
+    public function else(string $condition = NULL): JavascriptMethodBuilder {
         $this->addTabs($this->tabQuantity - 1);
-        $this->output .= "} else ";
+        $this->body .= "} else ";
         if (isset($condition)) {
-            $this->output .= "if ($condition) ";
+            $this->body .= "if ($condition) ";
         }
-        $this->output .= "{";
+        $this->body .= "{";
+            $this->newLine();
         return $this;
     }
 
-    public function end(): MethodBuilder {
-        $this->newLine();
+    public function end(): JavascriptMethodBuilder {
         $this->tabQuantity--;
         $this->addTabs();
-        $this->output .= "}";
+        $this->body .= "}";
+        $this->newLine();
         return $this;
     }
 
-    public function newLine(): MethodBuilder {
-        $this->output .= "\n";
+    public function return(string $return, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
+        if ($addTabs) {
+            $this->addTabs();
+        }
+        $this->body .= "return $return";
+        return $this->endAndNewLine($newLine, $endLine);
+    }
+
+    public function endAndNewLine(bool $newLine = true, bool $endLine = true): JavascriptMethodBuilder {
+        if ($endLine && !endsWith($this->body, ";")) {
+            $this->body .= ";";
+        }
+        if ($newLine) {
+            $this->newLine();
+        }
         return $this;
     }
 
-    public function build(): string {
-        return $this->output;
+    public function phpIf(bool $condition, $truthyCallback, $falsyCallback = NULL): JavascriptMethodBuilder {
+        if ($condition) {
+            $truthyCallback($this);
+        } else if (isset($falsyCallback)) {
+            $falsyCallback($this);
+        }
+        return $this;
+    }
+
+    public function newLine(): JavascriptMethodBuilder {
+        $this->body .= "\n";
+        return $this;
+    }
+
+    public function build(): JavascriptMethod {
+        return new JavascriptMethod($this->name, $this->params, $this->body);
     }
 
     private function addTabs(int $tabQuantity = NULL): void {
@@ -60,17 +154,7 @@ class MethodBuilder {
             $tabQuantity = $this->tabQuantity;
         }
         for ($i = 1; $i < $tabQuantity; $i++) {
-            $this->output .= "\t";
+            $this->body .= "\t";
         }
     }
 }
-
-$builder = new MethodBuilder();
-echo $builder
-    ->line("console.log('oi')")
-    ->if("true")
-        ->line("console.log('eu sou verdadeiro')")
-    ->else()
-        ->line("console.log('eu sou falso')")
-    ->end()
-    ->build();

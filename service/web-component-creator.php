@@ -2,6 +2,7 @@
 require_once(__DIR__ . '\..\components\web-component.php');
 require_once(__DIR__ . '\..\service\style-register.php');
 require_once(__DIR__ . '\..\utils\utils.php');
+require_once(__DIR__ . '\..\utils\method-builder.php');
 
 class WebComponentCreator {
 
@@ -58,36 +59,38 @@ class WebComponentCreator {
     }
 
     private static function stringCompiler(array $fields): void {
-        echo "_compile(template) {";
-        echo WebComponentCreator::templateAttributes($fields);
-        ?>
-            var keys = Object.keys(templateAttributes),
-            fn = new Function(...keys, 'return `' + template.replace(/`/g, '\\`') + '`');
-            return fn(...keys.map(key => templateAttributes[key]));
-        <?php
-        echo "}";
+        $methodBuilder = (new JavascriptMethodBuilder("_compile"))
+            ->param("template");
+        WebComponentCreator::templateAttributes($methodBuilder, $fields);
+
+        echo $methodBuilder
+            ->const("keys", "Object.keys(templateAttributes)")
+            ->const("fn", "new Function(...keys, 'return `' + template.replace(/`/g, '\\`') + '`')")
+            ->return("fn(...keys.map(key => templateAttributes[key]))")
+            ->build();
     }
 
     private static function renderStyles(WebComponent $component): void {
         $styles = $component->getStyle();
-        $styles = preg_replace('/\$/', '\\\\$', $styles);
+        $methodBuilder = new JavascriptMethodBuilder("_compileStyle");
 
         if ($component->_domMode == DomMode::SHADOW) {
-            echo "_compileStyle() {";
-            echo "  return this._compile(`$styles`);";
-            echo "}";
+            $styles = preg_replace('/\$/', '\\\\$', $styles);
+            $methodBuilder->return("this._compile(`$styles`)");
+
         } else {
-            echo "_compileStyle() { return ''; }";
+            $methodBuilder->return("''");
             StyleRegister::addStyle($styles, $component->getTagName());
         }
+        echo $methodBuilder->build();
     }
 
     private static function renderTemplate(WebComponent $component): void {
         $template = $component->getTemplate();
         $template = preg_replace('/\$/', '\\\\$', $template);
-        echo "_compileTemplate() {";
-        echo "  return this._compile(`$template`);";
-        echo "}";
+        echo (new JavascriptMethodBuilder("_compileTemplate"))
+            ->return("this._compile(`$template`)")
+            ->build();
     }
 
     private static function defineProperties(WebComponent $component, array $fields): void {
@@ -135,24 +138,23 @@ class WebComponentCreator {
     }
 
     private static function createAttributeGetter(string $fieldName, string $kebabCasedName, string $type): void {
-        
         $typeConversionFunction = WebComponentCreator::getTypeConverter($type);
-        echo "get $fieldName() {";
-        echo "  return ";
+        $methodBuilder = new JavascriptMethodBuilder("get $fieldName");
         if (WebComponentCreator::isObject($type)) {
-            echo "JSON.parse(atob(this.getAttribute('$kebabCasedName')));";
+            $methodBuilder->return("JSON.parse(atob(this.getAttribute('$kebabCasedName')))");
 
         } else {
+            $methodBuilder->code("return ");
             if (isset($typeConversionFunction)) {
-                echo "$typeConversionFunction(";
+                $methodBuilder->code("$typeConversionFunction(");
             }
-            echo "this.getAttribute('$kebabCasedName')";
+            $methodBuilder->code("this.getAttribute('$kebabCasedName')");
             if (isset($typeConversionFunction)) {
-                echo ")";
+                $methodBuilder->code(")");
             }
-            echo ";";
+            $methodBuilder->endAndNewLine();
         }
-        echo "}";
+        echo $methodBuilder->build();
     }
 
     private static function getTypeConverter(string $type) {
@@ -163,23 +165,22 @@ class WebComponentCreator {
     }
 
     private static function createAttributeSetter(string $fieldName, string $kebabCasedName, string $type): void {
-        echo "set $fieldName(value) {";
-        if ($type === 'boolean') {
-
-            echo "if (value) {";
-            echo "  this.setAttribute('$kebabCasedName', value);";
-            echo "} else {";
-            echo "  this.removeAttribute('$kebabCasedName');";
-            echo "}";
-
-        } else {
-            if (WebComponentCreator::isObject($type)) {
-                echo "this.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)));";
-            } else {
-                echo "this.setAttribute('$kebabCasedName', value);";
-            }
-        }
-        echo "}";
+        echo (new JavascriptMethodBuilder("set $fieldName"))
+            ->param("value")
+            ->phpIf($type === 'boolean',
+                fn($builder) => $builder
+                    ->if("value")
+                        ->line("this.setAttribute('$kebabCasedName', value)")
+                    ->else()
+                        ->line("this.removeAttribute('$kebabCasedName')")
+                    ->end(),
+                fn($builder) => $builder
+                    ->phpIf(WebComponentCreator::isObject($type),
+                        fn($builder) => $builder->line("this.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)))"),
+                        fn($builder) => $builder->line("this.setAttribute('$kebabCasedName', value)")
+                    )
+            )
+            ->build();
     }
 
     private static function isObject(string $type): bool {
@@ -187,27 +188,29 @@ class WebComponentCreator {
     }
 
     private static function observedAttributes(array $fields): void {
-        echo "static get observedAttributes() {";
-        echo "  return [";
+        $methodBuilder = (new JavascriptMethodBuilder("get observedAttributes"))
+            ->return("[", true, false);
         foreach ($fields as $field) {
             $kebabCasedName = kebabCase($field->name);
-            echo "'$kebabCasedName',";
+            $methodBuilder->line("'$kebabCasedName', ", true, false);
         }
-        echo "]; }";
+        echo $methodBuilder
+            ->line("]")
+            ->build();
     }
 
     private static function defaultValues(WebComponent $component, array $fields): void {
-        echo "_setDefaultValues() {";
+        $methodBuilder = new JavascriptMethodBuilder("_setDefaultValues");
         foreach ($fields as $field) {
             $name = $field->name;
             
             if (!startsWith($name, '_') && isset($component->$name)) {
                 $value = convertToJavascriptValue($component->$name);
                 $encodedValue = json_encode($value);
-                echo "  this.$name = $encodedValue;";
+                $methodBuilder->line("this.$name = $encodedValue");
             }
         } 
-        echo "}";
+        echo $methodBuilder->build();
     }
 
     static function getFields(WebComponent $component) {
@@ -215,12 +218,12 @@ class WebComponentCreator {
         return $reflect->getProperties();
     }
 
-    private static function templateAttributes(array $fields): void {
-        echo "const templateAttributes = { ";
+    private static function templateAttributes(JavascriptMethodBuilder $methodBuilder, array $fields): void {
+        $methodBuilder->line("const templateAttributes = {", true, false);
         foreach ($fields as $field) {
             $name = $field->name;
-            echo "'$name': this.$name, ";
+            $methodBuilder->line("'$name': this.$name, ", true, false);
         }
-        echo "};";
+        $methodBuilder->line("}");
     }
 }
