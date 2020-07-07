@@ -103,6 +103,9 @@ class WebComponentCreator {
             if (startsWith($fieldName, '_')) {
                 WebComponentCreator::createProperty($fieldName, $value, $type);
             } else {
+                if (WebComponentCreator::isObject($type)) {
+                    WebComponentCreator::createProperty($fieldName . '_', $value, $type);
+                }
                 WebComponentCreator::createAttributeGetter($fieldName, $kebabCasedName, $type);
                 WebComponentCreator::createAttributeSetter($fieldName, $kebabCasedName, $type);
             }
@@ -132,16 +135,16 @@ class WebComponentCreator {
         if (!isset($value)) {
             $value = 'null';
         } else {
-            $value = convertToJavascriptValue($value);
+            $value = json_encode($value);
         }
-        echo "$fieldName = $value;";
+        echo "$fieldName = $value;\n";
     }
 
     private static function createAttributeGetter(string $fieldName, string $kebabCasedName, string $type): void {
         $typeConversionFunction = WebComponentCreator::getTypeConverter($type);
         $methodBuilder = new JavascriptMethodBuilder("get $fieldName");
         if (WebComponentCreator::isObject($type)) {
-            $methodBuilder->return("JSON.parse(atob(this.getAttribute('$kebabCasedName')))");
+            $methodBuilder->return("this.${fieldName}_");
 
         } else {
             $methodBuilder->code("return ");
@@ -176,7 +179,9 @@ class WebComponentCreator {
                     ->end(),
                 fn($builder) => $builder
                     ->phpIf(WebComponentCreator::isObject($type),
-                        fn($builder) => $builder->line("this.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)))"),
+                        fn($builder) => $builder
+                            ->line("this.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)))")
+                            ->line("this.${fieldName}_ = value"),
                         fn($builder) => $builder->line("this.setAttribute('$kebabCasedName', value)")
                     )
             )
@@ -226,10 +231,15 @@ class WebComponentCreator {
         $methodBuilder->line("}");
         $methodBuilder
             ->foreach("getInstancePropertiesNames(this, HTMLElement.prototype)", "propertyName")
+                ->newLine()
                 ->if("isMethod(this, propertyName)")
                     ->line("templateAttributes[propertyName] = this[propertyName].bind(this)")
                     ->const("methodRef", "this._createMethodRef(this[propertyName].bind(this), propertyName)")
                     ->line("templateAttributes[propertyName + 'Ref'] = `fnRefs['\${methodRef}']`")
+                    ->newLine()
+                ->else("typeof this[propertyName] === 'object'")
+                    ->const("objectRef", "this._createObjectRef(this[propertyName], propertyName)")
+                    ->line("templateAttributes[propertyName + 'Ref'] = `objRefs['\${objectRef}']`")
                 ->end()
             ->end()
             ->line(")");

@@ -2,8 +2,14 @@ const objRefs = {};
 const fnRefs = {};
 let cids = 1;
 
-function isMethod(obj, name) {
-    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), name);
+function isObject(obj, property) {
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), property);
+    console.log(obj, property, desc);
+    return desc && typeof desc.value === 'object';
+}
+
+function isMethod(obj, property) {
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), property);
     return desc && typeof desc.value === 'function';
 }
 
@@ -95,6 +101,10 @@ class AbstractWebComponent extends HTMLElement {
 
     attributeChangedCallback(name, oldValue, newValue) {
         let shouldRender = true;
+        const hiddenPropertyDescriptor = Object.getOwnPropertyDescriptor(this, `${name}_`);
+        if (hiddenPropertyDescriptor && typeof hiddenPropertyDescriptor.value === 'object') {
+            this[name + '_'] = JSON.parse(atob(newValue));
+        }
         if (this.renderOnChanged) {
             shouldRender = this.renderOnChanged(name, oldValue, newValue);
         }
