@@ -51,32 +51,23 @@ class JavascriptMethodBuilder {
     }
 
     public function var(string $name, string $value, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
-        if ($addTabs) {
-            $this->addTabs();
-        }
-        $this->body .= "var $name = $value";
-        return $this->endAndNewLine($newLine, $endLine);
+        return $this->code("var $name = $value", $newLine, $endLine, $addTabs);
     }
 
     public function const(string $name, string $value, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
+        return $this->code("const $name = $value", $newLine, $endLine, $addTabs);
+    }
+
+    public function code(string $code, bool $newLine = false, bool $endLine = false, bool $addTabs = false): JavascriptMethodBuilder {
         if ($addTabs) {
             $this->addTabs();
         }
-        $this->body .= "const $name = $value";
+        $this->body .= $code;
         return $this->endAndNewLine($newLine, $endLine);
     }
 
-    public function code(string $code): JavascriptMethodBuilder {
-        $this->line($code, false, false, false);
-        return $this;
-    }
-
-    public function line(string $line, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
-        if ($addTabs) {
-            $this->addTabs();
-        }
-        $this->body .= $line;
-        return $this->endAndNewLine($newLine, $endLine);
+    public function line(string $line): JavascriptMethodBuilder {
+        return $this->code($line, true, true, true);
     }
 
     public function lines(array $lines): JavascriptMethodBuilder {
@@ -130,11 +121,7 @@ class JavascriptMethodBuilder {
     }
 
     public function return(string $return, bool $newLine = true, bool $endLine = true, bool $addTabs = true): JavascriptMethodBuilder {
-        if ($addTabs) {
-            $this->addTabs();
-        }
-        $this->body .= "return $return";
-        return $this->endAndNewLine($newLine, $endLine);
+        return $this->code("return $return", $newLine, $endLine, $addTabs);
     }
 
     public function endAndNewLine(bool $newLine = true, bool $endLine = true): JavascriptMethodBuilder {

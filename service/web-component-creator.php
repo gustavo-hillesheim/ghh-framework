@@ -192,7 +192,7 @@ class WebComponentCreator {
             ->return("[", true, false);
         foreach ($fields as $field) {
             $kebabCasedName = kebabCase($field->name);
-            $methodBuilder->line("'$kebabCasedName', ", true, false);
+            $methodBuilder->code("'$kebabCasedName', ", true, false, true);
         }
         echo $methodBuilder
             ->line("]")
@@ -218,10 +218,10 @@ class WebComponentCreator {
     }
 
     private static function templateAttributes(JavascriptMethodBuilder $methodBuilder, array $fields): void {
-        $methodBuilder->line("const templateAttributes = {", true, false);
+        $methodBuilder->const("templateAttributes", "{", true, false, true);
         foreach ($fields as $field) {
             $name = $field->name;
-            $methodBuilder->line("'$name': this.$name, ", true, false);
+            $methodBuilder->code("'$name': this.$name, ", true, false, true);
         }
         $methodBuilder->line("}");
         $methodBuilder
