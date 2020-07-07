@@ -14,8 +14,10 @@ class TestandoComponent extends WebComponent {
     function template(): void {
     ?>
         <h1>${c && c.name} ${c && c.hobby}</h1>
-        <h2>Outro texto</h2>
+        <h2>Outro texto ${textLegal}</h2>
         ${hasValue ? '<h3>Eu tenho valor</h3>' : ''}
+        <button onclick="${rotateRef}(1)">Pra cima</button>
+        <button onclick="${rotateRef}(-1)">Pra baixo</button>
     <?php
     }
 
@@ -26,6 +28,14 @@ class TestandoComponent extends WebComponent {
                 transform: rotate(${rotation}deg);
             }
         </style>
+    <?php
+    }
+
+    function script(): void {
+    ?>
+        rotate(angle) {
+            this.rotation += angle;
+        }
     <?php
     }
 }

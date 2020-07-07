@@ -1,5 +1,33 @@
 const objRefs = {};
 const fnRefs = {};
+let cids = 1;
+
+function isMethod(obj, name) {
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), name);
+    return desc && typeof desc.value === 'function';
+}
+
+function hasProperty(obj, name) {
+    const desc = Object.getOwnPropertyDescriptor(obj, name);
+    return !!desc;
+}
+
+function getInstancePropertiesNames(obj, stop) {
+    let array = [];
+    let proto = Object.getPrototypeOf(obj);
+    while (proto && proto !== stop) {
+        Object.getOwnPropertyNames(proto)
+            .forEach(name => {
+                if (name !== 'constructor') {
+                    if (hasProperty(proto, name)) {
+                        array.push(name);
+                    }
+                }
+            });
+        proto = Object.getPrototypeOf(proto);
+    }
+    return array;
+}
 
 class AbstractWebComponent extends HTMLElement {
 
@@ -9,6 +37,10 @@ class AbstractWebComponent extends HTMLElement {
     _afterRenderLifecycleName = 'afterRender';
 
     _root;
+
+    get cid() {
+        return parseInt(this.getAttribute('cid'));
+    }
 
     constructor(domMode) {
         super();
@@ -56,6 +88,7 @@ class AbstractWebComponent extends HTMLElement {
 
     /** Web component hooks */
     connectedCallback() {
+        this.setAttribute('cid', cids++);
         this._setDefaultValues();
         this.render();
     }
@@ -68,5 +101,21 @@ class AbstractWebComponent extends HTMLElement {
         if (shouldRender) {
             this.render();
         }
+    }
+
+    _createMethodRef(method, name) {
+        const fnRefName = this._createIdentifier(name);
+        fnRefs[fnRefName] = method;
+        return fnRefName;
+    }
+
+    _createObjectRef(object, name) {
+        const objRefName = this._createIdentifier(name);
+        objRefs[objRefName] = object;
+        return objRefName;
+    }
+
+    _createIdentifier(name) {
+        return `${this.cid}#${name}`;
     }
 }

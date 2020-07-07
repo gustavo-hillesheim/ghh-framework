@@ -86,6 +86,22 @@ class JavascriptMethodBuilder {
         return $this;
     }
 
+    public function for(string $variableName, string $source): JavascriptMethodBuilder {
+        $this->addTabs();
+        $this->body .= "for (let $variableName in $source) {";
+        $this->tabQuantity++;
+        $this->newLine();
+        return $this;
+    }
+
+    public function foreach(string $source, string $variableName): JavascriptMethodBuilder {
+        $this->addTabs();
+        $this->body .= "$source.forEach($variableName => {";
+        $this->tabQuantity++;
+        $this->newLine();
+        return $this;
+    }
+
     public function if(string $condition): JavascriptMethodBuilder {
         $this->addTabs();
         $this->body .= "if ($condition) {";

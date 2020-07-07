@@ -188,7 +188,7 @@ class WebComponentCreator {
     }
 
     private static function observedAttributes(array $fields): void {
-        $methodBuilder = (new JavascriptMethodBuilder("get observedAttributes"))
+        $methodBuilder = (new JavascriptMethodBuilder("static get observedAttributes"))
             ->return("[", true, false);
         foreach ($fields as $field) {
             $kebabCasedName = kebabCase($field->name);
@@ -205,8 +205,7 @@ class WebComponentCreator {
             $name = $field->name;
             
             if (!startsWith($name, '_') && isset($component->$name)) {
-                $value = convertToJavascriptValue($component->$name);
-                $encodedValue = json_encode($value);
+                $encodedValue = json_encode($component->$name);
                 $methodBuilder->line("this.$name = $encodedValue");
             }
         } 
@@ -225,5 +224,14 @@ class WebComponentCreator {
             $methodBuilder->line("'$name': this.$name, ", true, false);
         }
         $methodBuilder->line("}");
+        $methodBuilder
+            ->foreach("getInstancePropertiesNames(this, HTMLElement.prototype)", "propertyName")
+                ->if("isMethod(this, propertyName)")
+                    ->line("templateAttributes[propertyName] = this[propertyName].bind(this)")
+                    ->const("methodRef", "this._createMethodRef(this[propertyName].bind(this), propertyName)")
+                    ->line("templateAttributes[propertyName + 'Ref'] = `fnRefs['\${methodRef}']`")
+                ->end()
+            ->end()
+            ->line(")");
     }
 }

@@ -16,5 +16,6 @@ TestandoComponent::import();
     </head>
     <body>
         <testando-component></testando-component>
+        <testando-component></testando-component>
     </body>
 </html>
