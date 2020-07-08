@@ -2,6 +2,14 @@ const objRefs = {};
 const fnRefs = {};
 let cids = 1;
 
+function encodeObject(obj) {
+    return btoa(JSON.stringify(obj));
+}
+
+function decodeObject(objStr) {
+    return JSON.parse(atob(objStr));
+}
+
 function isObject(obj, property) {
     const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), property);
     console.log(obj, property, desc);
@@ -103,7 +111,7 @@ class AbstractWebComponent extends HTMLElement {
         let shouldRender = true;
         const hiddenPropertyDescriptor = Object.getOwnPropertyDescriptor(this, `${name}_`);
         if (hiddenPropertyDescriptor && typeof hiddenPropertyDescriptor.value === 'object') {
-            this[name + '_'] = JSON.parse(atob(newValue));
+            this[name + '_'] = decodeObject(newValue);
         }
         if (this.renderOnChanged) {
             shouldRender = this.renderOnChanged(name, oldValue, newValue);

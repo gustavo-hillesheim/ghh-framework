@@ -19,6 +19,7 @@ class TestandoComponent extends WebComponent {
         <button onclick="${rotateRef}(1)">Pra cima</button>
         <button onclick="${rotateRef}(-1)">Pra baixo</button>
         <button onclick="${logRef}(${cRef})">Log c</button>
+        ${cEncoded}
     <?php
     }
 
@@ -40,6 +41,7 @@ class TestandoComponent extends WebComponent {
         log(c) {
             console.log(c, this.c, c == this.c);
             c.name += "t";
+            this.render();
         }
     <?php
     }

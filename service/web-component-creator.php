@@ -180,7 +180,7 @@ class WebComponentCreator {
                 fn($builder) => $builder
                     ->phpIf(WebComponentCreator::isObject($type),
                         fn($builder) => $builder
-                            ->line("this.setAttribute('$kebabCasedName', btoa(JSON.stringify(value)))")
+                            ->line("this.setAttribute('$kebabCasedName', encodeObject(value))")
                             ->line("this.${fieldName}_ = value"),
                         fn($builder) => $builder->line("this.setAttribute('$kebabCasedName', value)")
                     )
@@ -238,8 +238,10 @@ class WebComponentCreator {
                     ->line("templateAttributes[propertyName + 'Ref'] = `fnRefs['\${methodRef}']`")
                     ->newLine()
                 ->else("typeof this[propertyName] === 'object'")
-                    ->const("objectRef", "this._createObjectRef(this[propertyName], propertyName)")
+                    ->const("obj", "this[propertyName]")
+                    ->const("objectRef", "this._createObjectRef(obj, propertyName)")
                     ->line("templateAttributes[propertyName + 'Ref'] = `objRefs['\${objectRef}']`")
+                    ->line("templateAttributes[propertyName + 'Encoded'] = encodeObject(obj)")
                 ->end()
             ->end()
             ->line(")");
