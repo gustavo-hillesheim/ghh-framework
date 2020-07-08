@@ -232,7 +232,7 @@ class WebComponentCreator {
         $methodBuilder
             ->foreach("getInstancePropertiesNames(this, HTMLElement.prototype)", "propertyName")
                 ->newLine()
-                ->if("isMethod(this, propertyName)")
+                ->if("isMethod(this, propertyName, HTMLElement.prototype)")
                     ->line("templateAttributes[propertyName] = this[propertyName].bind(this)")
                     ->const("methodRef", "this._createMethodRef(this[propertyName].bind(this), propertyName)")
                     ->line("templateAttributes[propertyName + 'Ref'] = `fnRefs['\${methodRef}']`")

@@ -18,8 +18,8 @@ class TestandoComponent extends WebComponent {
         ${hasValue ? '<h3>Eu tenho valor</h3>' : ''}
         <button onclick="${rotateRef}(1)">Pra cima</button>
         <button onclick="${rotateRef}(-1)">Pra baixo</button>
-        <button onclick="${logRef}(${cRef})">Log c</button>
-        ${cEncoded}
+        <button onclick="${emitRef}('teste')">Log c</button>
+        ${cEncoded} - ${cRef}
     <?php
     }
 
@@ -37,11 +37,6 @@ class TestandoComponent extends WebComponent {
     ?>
         rotate(angle) {
             this.rotation += angle;
-        }
-        log(c) {
-            console.log(c, this.c, c == this.c);
-            c.name += "t";
-            this.render();
         }
     <?php
     }

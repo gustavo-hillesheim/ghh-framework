@@ -10,15 +10,28 @@ function decodeObject(objStr) {
     return JSON.parse(atob(objStr));
 }
 
-function isObject(obj, property) {
-    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), property);
-    console.log(obj, property, desc);
-    return desc && typeof desc.value === 'object';
+function isObject(obj, property, stop) {
+    let proto = Object.getPrototypeOf(obj);
+    while (proto && proto !== stop) {
+        const desc = Object.getOwnPropertyDescriptor(proto, property);
+        if (desc) {
+            return typeof desc.value === 'object';
+        }
+        proto = Object.getPrototypeOf(proto);
+    }
+    return false;
 }
 
-function isMethod(obj, property) {
-    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(obj), property);
-    return desc && typeof desc.value === 'function';
+function isMethod(obj, property, stop) {
+    let proto = Object.getPrototypeOf(obj);
+    while (proto && proto !== stop) {
+        const desc = Object.getOwnPropertyDescriptor(proto, property);
+        if (desc) {
+            return typeof desc.value === 'function';
+        }
+        proto = Object.getPrototypeOf(proto);
+    }
+    return false;
 }
 
 function hasProperty(obj, name) {
@@ -135,5 +148,23 @@ class AbstractWebComponent extends HTMLElement {
 
     _createIdentifier(name) {
         return `${this.cid}#${name}`;
+    }
+
+    emit(event, eventDetails = {}) {
+        if (typeof event === 'Event') {
+            this._emitEvent(event);
+        } else {
+            const customEvent = new CustomEvent(event, eventDetails);
+            this._emitEvent(customEvent);
+        }
+    }
+
+    _emitEvent(event) {
+        const listenerStr = this.getAttribute(`on${event.type}`);
+        if (listenerStr) {
+            const listenerExecutor = new Function('$event', `eval(${listenerStr})`);
+            listenerExecutor(event);
+        }
+        this.dispatchEvent(event);
     }
 }

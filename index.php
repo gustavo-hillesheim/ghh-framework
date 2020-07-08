@@ -9,13 +9,15 @@ TestandoComponent::import();
     <head>
         <script>
             <?= JavascriptRegister::getCode() ?>
+            function logEvent(event) {
+                console.log(event);
+            }
         </script>
         <style>
             <?= StyleRegister::getStyle() ?>
         </style>
     </head>
     <body>
-        <testando-component></testando-component>
-        <testando-component></testando-component>
+        <testando-component onteste="logEvent($event)"></testando-component>
     </body>
 </html>
