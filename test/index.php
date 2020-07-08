@@ -1,7 +1,7 @@
 <?php
-require_once(__DIR__ . '\components\test-component.php');
-require_once(__DIR__ . '\service\javascript-register.php');
-require_once(__DIR__ . '\service\style-register.php');
+require_once(__DIR__ . '\test-component.php');
+require_once(__DIR__ . '\..\register\javascript-register.php');
+require_once(__DIR__ . '\..\register\style-register.php');
 TestandoComponent::import();
 ?>
 

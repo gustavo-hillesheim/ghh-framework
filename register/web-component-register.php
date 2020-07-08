@@ -1,7 +1,7 @@
 <?php
-require_once(__DIR__ . '\..\components\web-component.php');
-require_once(__DIR__ . '\..\service\web-component-creator.php');
-require_once(__DIR__ . '\..\service\javascript-register.php');
+require_once(__DIR__ . '\..\web-component\web-component.php');
+require_once(__DIR__ . '\..\web-component\web-component-creator.php');
+require_once(__DIR__ . '\javascript-register.php');
 
 class WebComponentRegister {
 

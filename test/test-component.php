@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__ . '\..\components\web-component.php');
+require_once(__DIR__ . '\..\web-component\web-component.php');
 
 class TestandoComponent extends WebComponent {
 

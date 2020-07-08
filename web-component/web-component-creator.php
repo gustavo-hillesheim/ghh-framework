@@ -1,6 +1,6 @@
 <?php
-require_once(__DIR__ . '\..\components\web-component.php');
-require_once(__DIR__ . '\..\service\style-register.php');
+require_once(__DIR__ . '\web-component.php');
+require_once(__DIR__ . '\..\register\style-register.php');
 require_once(__DIR__ . '\..\utils\utils.php');
 require_once(__DIR__ . '\..\utils\method-builder.php');
 
